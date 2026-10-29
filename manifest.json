@@ -1,23 +1,38 @@
 {
-  "name": "M5 Sabah Tren Servis Listesi",
+  "name": "M5 Metro Sabah Tren Servis Listesi",
   "short_name": "M5 Servis",
-  "start_url": "./index.html",
+  "description": "M5 Üsküdar - Sultanbeyli Metro Hattı Sabah Tren Servis ve Gece Park Konumu Sevk Listesi",
+  "lang": "tr-TR",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#0b1120",
-  "theme_color": "#0b1120",
-  "orientation": "portrait",
+  "theme_color": "#6b215c",
   "icons": [
     {
       "src": "icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

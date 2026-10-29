@@ -1,5 +1,5 @@
-const CACHE_NAME = 'm5-servis-v1';
-const assets = [
+const CACHE_NAME = 'm5-servis-v2';
+const PRECACHE_ASSETS = [
   './',
   './index.html',
   './manifest.json',
@@ -8,37 +8,62 @@ const assets = [
   'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'
 ];
 
-// 1. Kurulum aşaması: Önbelleğe alma ve beklemeden aktif olma
-self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(assets);
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(async (cache) => {
+      for (const asset of PRECACHE_ASSETS) {
+        try {
+          await cache.add(asset);
+        } catch (err) {
+          // Tek bir dosya başarısız olursa diğerlerinin önbelleğe alınmasını engelleme
+        }
+      }
     })
   );
-  self.skipWaiting(); // Yeni Service Worker'ın hemen devreye girmesini sağlar
+  self.skipWaiting();
 });
 
-// 2. Aktivasyon aşaması: Eski önbellekleri (Cache) temizleme
-self.addEventListener('activate', e => {
-  e.waitUntil(
-    caches.keys().then(keys => {
-      return Promise.all(
-        keys.map(key => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-        })
-      );
-    })
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(
+        keys
+          .filter((key) => key !== CACHE_NAME)
+          .map((key) => caches.delete(key))
+      )
+    )
   );
-  self.clients.claim(); // Kontrolü anında tüm açık sekmelere devreder
+  self.clients.claim();
 });
 
-// 3. İstekleri yakalama (Fetch)
-self.addEventListener('fetch', e => {
-  e.respondWith(
-    caches.match(e.request).then(cachedResponse => {
-      return cachedResponse || fetch(e.request);
-    })
+self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
+  const url = new URL(event.request.url);
+  if (!url.protocol.startsWith('http')) return;
+
+  // CDN kütüphaneleri ve ikonlar için Önce Önbellek (Cache-First)
+  if (url.hostname.includes('cdnjs.cloudflare.com') || url.pathname.endsWith('.png')) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        if (cached) return cached;
+        return fetch(event.request).then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          return response;
+        });
+      })
+    );
+    return;
+  }
+
+  // HTML ve uygulama dosyaları için Önce Ağ, Çevrimdışıysa Önbellek (Network-First)
+  event.respondWith(
+    fetch(event.request)
+      .then((response) => {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        return response;
+      })
+      .catch(() => caches.match(event.request).then((cached) => cached || caches.match('./index.html')))
   );
 });
